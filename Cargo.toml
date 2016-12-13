@@ -2,5 +2,10 @@
 name = "servent"
 version = "0.1.0"
 authors = ["LFalch <lucas@wasd.dk>"]
+description = "Program for quickly hosting a small web server"
 
 [dependencies]
+clap = "^2.19"
+rouille = "^0.3"
+filetime = "0.1.10"
+time = "0.1.35"

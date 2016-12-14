@@ -6,6 +6,6 @@ description = "Program for quickly hosting a small web server"
 
 [dependencies]
 clap = "^2.19"
-rouille = "^0.3"
+rouille = "^0.4"
 filetime = "0.1.10"
 time = "0.1.35"

@@ -37,7 +37,7 @@ fn main() {
     let path = m.value_of("root-path").unwrap().to_owned();
 
     rouille::start_server(addr, move |req| {
-        handle(&path, req)
+        handle(&req, &path)
     });
 }
 
@@ -51,15 +51,11 @@ fn is_valid(url: String) -> Result<(), String> {
 use std::fs;
 
 // Code below is a modified version of `rouille::match_assets`
-
-fn handle<P: AsRef<Path>>(path: P, req: &Request) -> Response{
+fn handle<P: AsRef<Path>>(req: &Request, path: &P) -> Response{
     let path = path.as_ref();
     let path = match path.canonicalize() {
         Ok(p) => p,
-        Err(_) => {
-            println!("Root path doesn't exist!");
-            return Response::empty_404()
-        },
+        Err(_) => return Response::empty_404(),
     };
 
     let potential_file = {
@@ -85,7 +81,7 @@ fn handle<P: AsRef<Path>>(path: P, req: &Request) -> Response{
         _ => return Response::empty_404(),
     };
 
-    let extension = potential_file.extension().and_then(|s| s.to_str());
+    let extension = potential_file.extension().and_then(std::ffi::OsStr::to_str);
 
     let file = match fs::File::open(&potential_file) {
         Ok(f) => f,
@@ -97,15 +93,9 @@ fn handle<P: AsRef<Path>>(path: P, req: &Request) -> Response{
         .unwrap_or(time::now().tm_nsec as u64)
         ^ 0xd3f40305c9f8e911u64).to_string();
 
-    Response {
-        status_code: 200,
-        headers: vec![
-            ("Cache-Control".into(), "public, max-age=3600".into()),
-            ("Content-Type".into(), extension_to_mime(extension).into()),
-        ],
-        data: ResponseBody::from_file(file),
-        upgrade: None,
-    }.with_etag(req, etag)
+    Response::from_file(extension_to_mime(extension), file)
+        .with_etag(req, etag)
+        .with_public_cache(3600)
 }
 
 include!("extension_to_mime.rs");
